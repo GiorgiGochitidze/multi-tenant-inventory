@@ -13,7 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response as ExpressResponse } from 'express';
 import { UserAuthResponse } from './auth.controller';
-import { User } from './entity/User.entity';
+import { User } from '../user/entity/User.entity';
 
 interface TokenPayload {
   id: string;
