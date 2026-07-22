@@ -7,6 +7,7 @@ export interface JwtPayload {
   id: string;
   name: string;
   email: string;
+  tenantId: string;
 }
 
 // Interface extending Express Request to include cookies safely
@@ -30,7 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   validate(payload: JwtPayload): JwtPayload {
-    if (!payload?.id) throw new UnauthorizedException();
+    if (!payload?.id || !payload?.tenantId)
+      throw new UnauthorizedException('Invalid session payload');
     return payload;
   }
 }

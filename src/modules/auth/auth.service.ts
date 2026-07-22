@@ -8,17 +8,19 @@ import {
 import { CreateAuthDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response as ExpressResponse } from 'express';
 import { UserAuthResponse } from './auth.controller';
-import { User } from '../user/entity/User.entity';
+import { User, UserRole } from '../user/entity/User.entity';
+import { Tenant } from '../tenant/entity/Tenant.entity';
 
 interface TokenPayload {
   id: string;
   name: string;
   email: string;
+  tenantId: string;
 }
 
 @Injectable()
@@ -26,7 +28,10 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepository: Repository<Tenant>,
     private readonly jwtService: JwtService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private getErrorMessage(error: unknown): string {
@@ -38,29 +43,50 @@ export class AuthService {
     createAuthDto: CreateAuthDto,
     res: ExpressResponse,
   ): Promise<UserAuthResponse> {
-    const { email, password, name } = createAuthDto;
+    const { email, password, name, tenantName } = createAuthDto;
+
+    const formattedSlug =
+      tenantName.trim().toLowerCase().replace(/\s+/g, '-') + '-shop';
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new ConflictException('A user with this email already exists');
+    }
+
+    const existingTenant = await this.tenantRepository.findOne({
+      where: { slug: formattedSlug },
+    });
+    if (existingTenant) {
+      throw new ConflictException('A tenant with this name already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-      const existingUser = await this.userRepository.findOne({
-        where: [{ email }],
-      });
-      if (existingUser) {
-        throw new ConflictException('A user with this email already exists');
-      }
+      const newUser = await this.dataSource.transaction(async (manager) => {
+        const tenant = manager.create(Tenant, {
+          name: tenantName,
+          slug: formattedSlug,
+        });
+        const savedTenant = await manager.save(tenant);
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const newUser = this.userRepository.create({
-        name,
-        email,
-        password: hashedPassword,
+        const user = manager.create(User, {
+          name,
+          email,
+          password: hashedPassword,
+          role: UserRole.ADMIN,
+          tenantId: savedTenant.id,
+        });
+        return await manager.save(user);
       });
-      await this.userRepository.save(newUser);
 
       await this.setTokenCookies(res, {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        tenantId: newUser.tenantId,
       });
 
       return {
@@ -68,6 +94,7 @@ export class AuthService {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        tenantId: newUser.tenantId,
       };
     } catch (error: unknown) {
       if (error instanceof Error && 'status' in error) throw error;
@@ -98,6 +125,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        tenantId: user.tenantId,
       });
 
       return {
@@ -105,6 +133,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        tenantId: user.tenantId,
       };
     } catch (error: unknown) {
       if (error instanceof Error && 'status' in error) throw error;
@@ -138,6 +167,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        tenantId: user.tenantId,
       });
 
       return { message: 'Tokens rotated successfully' };
@@ -155,6 +185,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      tenantId: user.tenantId,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

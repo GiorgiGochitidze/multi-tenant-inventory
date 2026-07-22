@@ -1,4 +1,4 @@
-import { JwtPayload } from '../modules/auth/strategies/jwt.strategy';
+import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 declare global {
   namespace Express {

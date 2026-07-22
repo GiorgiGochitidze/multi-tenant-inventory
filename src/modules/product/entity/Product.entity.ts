@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Tenant } from '../../tenant/entity/Tenant.entity';
 
-@Index(['tenantId', 'sku'], { unique: true })
+@Index(['tenantId', 'sku'], { unique: true, where: '"deletedAt" IS NULL' })
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')

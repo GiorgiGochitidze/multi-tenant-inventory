@@ -27,6 +27,7 @@ export interface UserAuthResponse {
   id: string;
   name: string;
   email: string;
+  tenantId: string;
 }
 
 @Controller('auth')
