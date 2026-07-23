@@ -131,4 +131,40 @@ export class OrderService {
 
     return order;
   }
+
+  async cancelOrder(orderId: string, tenantId: string) {
+    this.validId(orderId, tenantId);
+
+    return await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId, tenantId },
+        relations: { items: true },
+      });
+
+      if (!order) {
+        throw new NotFoundException(
+          'Order with given ID or TenantID not found',
+        );
+      }
+
+      if (order.status === OrderStatus.CANCELLED) {
+        throw new BadRequestException('Order is already cancelled');
+      }
+
+      // Restore stock back to products
+      for (const item of order.items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.productId, tenantId },
+        });
+
+        if (product) {
+          product.stockQuantity += item.quantity;
+          await manager.save(Product, product);
+        }
+      }
+
+      order.status = OrderStatus.CANCELLED;
+      return await manager.save(Order, order);
+    });
+  }
 }

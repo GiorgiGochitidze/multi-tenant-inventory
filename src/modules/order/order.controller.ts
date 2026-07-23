@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -46,5 +47,14 @@ export class OrderController {
     @CurrentTenant() tenantId: string,
   ) {
     return await this.orderService.getOrderById(id, tenantId);
+  }
+
+  @Patch(':id/cancel')
+  @Roles(UserRole.ADMIN)
+  async cancelOrder(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ) {
+    return await this.orderService.cancelOrder(id, tenantId);
   }
 }
