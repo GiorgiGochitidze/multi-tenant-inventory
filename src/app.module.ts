@@ -8,6 +8,7 @@ import { dataSourceOptions } from './database/data-source';
 import { ProductModule } from './modules/product/product.module';
 import { OrderModule } from './modules/order/order.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
       }),
     }),
     AuthModule,
+    UserModule,
     ProductModule,
     OrderModule,
     AnalyticsModule,

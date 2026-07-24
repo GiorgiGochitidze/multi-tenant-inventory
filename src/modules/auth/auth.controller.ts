@@ -18,6 +18,7 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import type { Request as ExpressRequest } from 'express';
 import { SignInDto } from './dto/sign-in.dto';
 import { UserRole } from '../user/entity/User.entity';
+import { ApiTags } from '@nestjs/swagger';
 
 interface RequestWithCookies extends ExpressRequest {
   cookies: Record<string, string | undefined>;
@@ -33,6 +34,7 @@ export interface UserAuthResponse {
 }
 
 @Controller('auth')
+@ApiTags('Auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
