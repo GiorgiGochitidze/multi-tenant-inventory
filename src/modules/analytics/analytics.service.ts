@@ -4,11 +4,12 @@ import { Product } from '../product/entity/Product.entity';
 import { LessThanOrEqual, Repository } from 'typeorm';
 import { Order, OrderStatus } from '../order/entity/Order.entity';
 import { OrderItem } from '../order/entity/OrderItem.entity';
+import { validateUUIDs } from '../../utils/idsValidation.util';
 
 interface RevenueRawResult {
   totalSales: string | null;
   totalOrders: string | null;
-  avarageOrderValue: string | null;
+  averageOrderValue: string | null;
 }
 
 interface TopProductRawResult {
@@ -31,28 +32,35 @@ export class AnalyticsService {
 
   async getLowStockProduct(
     tenantId: string,
-    lowStockTheresold: number,
+    lowStockThreshold: number,
     page: string,
     limit: string,
   ) {
+    validateUUIDs(tenantId);
+
     const pageNum = Math.max(1, Number(page) || 1);
-    const limitNum = Math.max(1, Number(limit) || 1);
+    const limitNum = Math.max(1, Number(limit) || 10);
+
     const products = await this.productRepository.find({
-      where: { tenantId, stockQuantity: LessThanOrEqual(lowStockTheresold) },
-      order: { createdAt: 'ASC' },
+      where: { tenantId, stockQuantity: LessThanOrEqual(lowStockThreshold) },
+      order: { stockQuantity: 'ASC' },
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
       withDeleted: false,
     });
 
     if (products.length === 0) {
-      throw new NotFoundException('No orders found for this tenant');
+      throw new NotFoundException(
+        'No low stock products found for this tenant',
+      );
     }
 
     return products;
   }
 
   async revenueMetrics(tenantId: string) {
+    validateUUIDs(tenantId);
+
     const rawResult = await this.orderRepository
       .createQueryBuilder('order')
       .select('COALESCE(SUM(order.totalAmount), 0)', 'totalSales')
@@ -67,11 +75,13 @@ export class AnalyticsService {
     return {
       totalSales: Number(rawResult?.totalSales) || 0,
       totalOrders: Number(rawResult?.totalOrders) || 0,
-      avarageOrderValue: Number(rawResult?.avarageOrderValue) || 0,
+      averageOrderValue: Number(rawResult?.averageOrderValue) || 0,
     };
   }
 
   async topSellingProducts(tenantId: string, limit: string) {
+    validateUUIDs(tenantId);
+
     const limitNum = Math.max(1, Number(limit) || 10);
 
     const rawResult = await this.orderItemRepository
