@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { dataSourceOptions } from './database/data-source';
 import { ProductModule } from './modules/product/product.module';
 import { OrderModule } from './modules/order/order.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { OrderModule } from './modules/order/order.module';
     AuthModule,
     ProductModule,
     OrderModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
