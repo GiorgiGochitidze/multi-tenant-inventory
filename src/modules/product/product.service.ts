@@ -7,8 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entity/Product.entity';
 import { Repository } from 'typeorm';
 import { CreateProductDto } from './dto/create-product.dto';
-import { isUUID } from 'class-validator';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { validateUUIDs } from '../../utils/idsValidation.util';
 
 @Injectable()
 export class ProductService {
@@ -16,27 +16,16 @@ export class ProductService {
     @InjectRepository(Product) private productRepository: Repository<Product>,
   ) {}
 
-  // Helper: Ensures all passed IDs are valid UUIDs
-  private validId(...ids: string[]) {
-    for (const id of ids) {
-      if (!id || !isUUID(id)) {
-        throw new NotFoundException(
-          'Product with this ID or TenantID Not Found',
-        );
-      }
-    }
-  }
-
   // Helper: Fetches tenant-scoped product or returns null
   private async findProduct(productId: string, tenantId: string) {
-    this.validId(productId, tenantId);
+    validateUUIDs(tenantId);
     return await this.productRepository.findOne({
       where: { id: productId, tenantId },
     });
   }
 
   async createProduct(tenantId: string, dto: CreateProductDto) {
-    this.validId(tenantId);
+    validateUUIDs(tenantId);
 
     // Check SKU uniqueness (including soft-deleted rows to prevent DB constraint errors)
     const sameProduct = await this.productRepository.findOne({
@@ -62,7 +51,7 @@ export class ProductService {
   }
 
   async getProducts(page: string, pageSize: string, tenantId: string) {
-    this.validId(tenantId);
+    validateUUIDs(tenantId);
 
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.max(1, Number(pageSize) || 10);

@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
-import { isUUID } from 'class-validator';
 import { Order, OrderStatus } from './entity/Order.entity';
 import { OrderItem } from './entity/OrderItem.entity';
 import { Product } from '../product/entity/Product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { validateUUIDs } from '../../utils/idsValidation.util';
 
 @Injectable()
 export class OrderService {
@@ -19,18 +19,8 @@ export class OrderService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private validId(...ids: string[]) {
-    for (const id of ids) {
-      if (!id || !isUUID(id)) {
-        throw new NotFoundException(
-          'Order, Product, or Tenant with given ID not found',
-        );
-      }
-    }
-  }
-
   async createOrder(tenantId: string, dto: CreateOrderDto) {
-    this.validId(tenantId);
+    validateUUIDs(tenantId);
 
     const productIds = dto.items.map((item) => item.productId);
 
@@ -97,7 +87,7 @@ export class OrderService {
   }
 
   async getOrders(page: string, pageSize: string, tenantId: string) {
-    this.validId(tenantId);
+    validateUUIDs(tenantId);
 
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.max(1, Number(pageSize) || 10);
@@ -118,7 +108,7 @@ export class OrderService {
   }
 
   async getOrderById(orderId: string, tenantId: string) {
-    this.validId(orderId, tenantId);
+    validateUUIDs(tenantId);
 
     const order = await this.orderRepository.findOne({
       where: { id: orderId, tenantId },
@@ -133,7 +123,7 @@ export class OrderService {
   }
 
   async cancelOrder(orderId: string, tenantId: string) {
-    this.validId(orderId, tenantId);
+    validateUUIDs(tenantId);
 
     return await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(Order, {
