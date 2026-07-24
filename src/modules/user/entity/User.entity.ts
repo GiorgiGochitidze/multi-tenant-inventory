@@ -31,6 +31,9 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STAFF })
   role!: UserRole;
 
+  @Column({ type: 'boolean', default: true })
+  isActive!: boolean;
+
   @Column({ type: 'varchar', nullable: true, default: null })
   refreshToken!: string | null;
 

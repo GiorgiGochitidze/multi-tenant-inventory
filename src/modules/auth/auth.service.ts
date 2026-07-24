@@ -21,6 +21,7 @@ interface TokenPayload {
   name: string;
   email: string;
   tenantId: string;
+  role: UserRole;
 }
 
 @Injectable()
@@ -87,6 +88,7 @@ export class AuthService {
         name: newUser.name,
         email: newUser.email,
         tenantId: newUser.tenantId,
+        role: newUser.role,
       });
 
       return {
@@ -95,6 +97,7 @@ export class AuthService {
         name: newUser.name,
         email: newUser.email,
         tenantId: newUser.tenantId,
+        role: newUser.role,
       };
     } catch (error: unknown) {
       if (error instanceof Error && 'status' in error) throw error;
@@ -116,6 +119,10 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
+      if (!user.isActive) {
+        throw new UnauthorizedException('Account disabled');
+      }
+
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
@@ -126,6 +133,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         tenantId: user.tenantId,
+        role: user.role,
       });
 
       return {
@@ -134,6 +142,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         tenantId: user.tenantId,
+        role: user.role,
       };
     } catch (error: unknown) {
       if (error instanceof Error && 'status' in error) throw error;
@@ -168,6 +177,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         tenantId: user.tenantId,
+        role: user.role,
       });
 
       return { message: 'Tokens rotated successfully' };
@@ -186,6 +196,7 @@ export class AuthService {
       name: user.name,
       email: user.email,
       tenantId: user.tenantId,
+      role: user.role,
     };
 
     const [accessToken, refreshToken] = await Promise.all([
