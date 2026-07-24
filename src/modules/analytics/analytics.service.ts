@@ -3,11 +3,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../product/entity/Product.entity';
 import { LessThanOrEqual, Repository } from 'typeorm';
 import { Order, OrderStatus } from '../order/entity/Order.entity';
+import { OrderItem } from '../order/entity/OrderItem.entity';
 
 interface RevenueRawResult {
   totalSales: string | null;
   totalOrders: string | null;
   avarageOrderValue: string | null;
+}
+
+interface TopProductRawResult {
+  productId: string;
+  productName: string;
+  totalSold: string;
+  totalGeneratedRevenue: string;
 }
 
 @Injectable()
@@ -17,6 +25,8 @@ export class AnalyticsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(OrderItem)
+    private readonly orderItemRepository: Repository<OrderItem>,
   ) {}
 
   async getLowStockProduct(
@@ -61,7 +71,30 @@ export class AnalyticsService {
     };
   }
 
-  async topSellingProducts(tenantId: string) {
-    
+  async topSellingProducts(tenantId: string, limit: string) {
+    const limitNum = Math.max(1, Number(limit) || 10);
+
+    const rawResult = await this.orderItemRepository
+      .createQueryBuilder('item')
+      .innerJoin('item.order', 'order')
+      .innerJoin('item.product', 'product')
+      .select('item.productId', 'productId')
+      .addSelect('product.name', 'productName')
+      .addSelect('SUM(item.quantity)', 'totalSold')
+      .addSelect('SUM(item.quantity * item.unitPrice)', 'totalGeneratedRevenue')
+      .where('order.tenantId = :tenantId', { tenantId })
+      .andWhere('order.status != :status', { status: OrderStatus.CANCELLED })
+      .groupBy('item.productId')
+      .addGroupBy('product.name')
+      .orderBy('"totalSold"', 'DESC')
+      .limit(limitNum)
+      .getRawMany<TopProductRawResult>();
+
+    return rawResult.map((row) => ({
+      productId: row.productId,
+      productName: row.productName,
+      totalSold: Number(row.totalSold) || 0,
+      totalGeneratedRevenue: Number(row.totalGeneratedRevenue) || 0,
+    }));
   }
 }
