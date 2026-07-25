@@ -9,6 +9,7 @@ import { ProductModule } from './modules/product/product.module';
 import { OrderModule } from './modules/order/order.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { UserModule } from './modules/user/user.module';
+import { TenantModule } from './modules/tenant/tenant.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UserModule } from './modules/user/user.module';
     }),
     AuthModule,
     UserModule,
+    TenantModule,
     ProductModule,
     OrderModule,
     AnalyticsModule,

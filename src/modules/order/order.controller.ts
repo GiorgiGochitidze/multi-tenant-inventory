@@ -8,6 +8,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,7 +21,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorator/roles.decorator';
 import { CurrentTenant } from '../auth/decorator/current-tenant.decorator';
 import { UserRole } from '../user/entity/User.entity';
+import { OrderResponseDto } from './dto/order-response.dto';
 
+@ApiTags('Orders Management')
+@ApiCookieAuth('access_token')
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OrderController {
@@ -23,38 +32,44 @@ export class OrderController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ApiOperation({ summary: 'Create a new order for the active tenant' })
   async createOrder(
     @CurrentTenant() tenantId: string,
     @Body() dto: CreateOrderDto,
-  ) {
+  ): Promise<OrderResponseDto> {
     return await this.orderService.createOrder(tenantId, dto);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ApiOperation({ summary: 'Paginated list of orders for the active tenant' })
   async getOrders(
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,
     @CurrentTenant() tenantId: string,
-  ) {
+  ): Promise<OrderResponseDto[]> {
     return await this.orderService.getOrders(page, pageSize, tenantId);
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ApiOperation({ summary: 'Get order details by order ID' })
+  @ApiNotFoundResponse({ description: 'Order not found under this tenant' })
   async getOrderById(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
-  ) {
+  ): Promise<OrderResponseDto> {
     return await this.orderService.getOrderById(id, tenantId);
   }
 
   @Patch(':id/cancel')
   @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Cancel an existing order' })
+  @ApiNotFoundResponse({ description: 'Order not found under this tenant' })
   async cancelOrder(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
-  ) {
+  ): Promise<OrderResponseDto> {
     return await this.orderService.cancelOrder(id, tenantId);
   }
 }
