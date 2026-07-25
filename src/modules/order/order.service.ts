@@ -10,6 +10,7 @@ import { OrderItem } from './entity/OrderItem.entity';
 import { Product } from '../product/entity/Product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { validateUUIDs } from '../../utils/idsValidation.util';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrderService {
@@ -141,20 +142,69 @@ export class OrderService {
         throw new BadRequestException('Order is already cancelled');
       }
 
-      // Restore stock back to products
-      for (const item of order.items) {
-        const product = await manager.findOne(Product, {
-          where: { id: item.productId, tenantId },
-        });
+      // Extract product IDs from order items
+      const productIds = order.items.map((item) => item.productId);
 
+      // Fetch all relevant products in a single batch (including soft-deleted ones)
+      const products = await manager.find(Product, {
+        where: { id: In(productIds), tenantId },
+        withDeleted: true,
+      });
+
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
+      // Restore stock quantities in memory
+      for (const item of order.items) {
+        const product = productMap.get(item.productId);
         if (product) {
           product.stockQuantity += item.quantity;
-          await manager.save(Product, product);
         }
+      }
+
+      // Batch save all updated products in 1 query
+      if (products.length > 0) {
+        await manager.save(Product, products);
       }
 
       order.status = OrderStatus.CANCELLED;
       return await manager.save(Order, order);
+    });
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    tenantId: string,
+    dto: UpdateOrderStatusDto,
+  ) {
+    validateUUIDs(tenantId);
+
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId, tenantId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order with given ID or TenantID not found');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cannot update status of a cancelled order',
+      );
+    }
+
+    // If shifting to CANCELLED, execute full inventory restore logic
+    if (dto.status === OrderStatus.CANCELLED) {
+      return await this.cancelOrder(orderId, tenantId);
+    }
+
+    order.status = dto.status;
+    return await this.orderRepository.save(order);
+  }
+
+  // Quick action method specifically for manual admin/staff confirmation
+  async confirmOrder(orderId: string, tenantId: string) {
+    return await this.updateOrderStatus(orderId, tenantId, {
+      status: OrderStatus.CONFIRMED,
     });
   }
 }

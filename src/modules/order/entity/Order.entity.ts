@@ -1,4 +1,5 @@
 import {
+  BeforeInsert,
   Column,
   CreateDateColumn,
   Entity,
@@ -14,6 +15,7 @@ import { OrderItem } from './OrderItem.entity';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }
@@ -34,6 +36,13 @@ export class Order {
    */
   @Column({ type: 'varchar' })
   orderNumber!: string;
+
+  @BeforeInsert()
+  generateOrderNumber() {
+    if (!this.orderNumber) {
+      this.orderNumber = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+  }
 
   /**
    * Order status

@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOperation,
@@ -22,6 +23,7 @@ import { Roles } from '../auth/decorator/roles.decorator';
 import { CurrentTenant } from '../auth/decorator/current-tenant.decorator';
 import { UserRole } from '../user/entity/User.entity';
 import { OrderResponseDto } from './dto/order-response.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @ApiTags('Orders Management')
 @ApiCookieAuth('access_token')
@@ -71,5 +73,34 @@ export class OrderController {
     @CurrentTenant() tenantId: string,
   ): Promise<OrderResponseDto> {
     return await this.orderService.cancelOrder(id, tenantId);
+  }
+
+  @Patch(':orderId/confirm')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ApiOperation({ summary: 'Manually confirm a pending order' })
+  @ApiNotFoundResponse({ description: 'Order not found under this tenant' })
+  @ApiBadRequestResponse({ description: 'Order is already cancelled' })
+  async confirmOrder(
+    @Param('orderId') orderId: string,
+    @CurrentTenant() tenantId: string,
+  ): Promise<OrderResponseDto> {
+    return await this.orderService.confirmOrder(orderId, tenantId);
+  }
+
+  @Patch(':orderId/status')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  @ApiOperation({
+    summary: 'Update order status (CONFIRMED, COMPLETED, CANCELLED)',
+  })
+  @ApiNotFoundResponse({ description: 'Order not found under this tenant' })
+  @ApiBadRequestResponse({
+    description: 'Cannot update status of a cancelled order',
+  })
+  async updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @CurrentTenant() tenantId: string,
+    @Body() dto: UpdateOrderStatusDto,
+  ): Promise<OrderResponseDto> {
+    return await this.orderService.updateOrderStatus(orderId, tenantId, dto);
   }
 }

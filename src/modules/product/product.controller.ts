@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
@@ -81,12 +82,37 @@ export class ProductController {
 
   @Delete(':productId')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Soft delete a product' })
+  @ApiOperation({
+    summary:
+      'Delete product (defaults to soft delete, use ?soft=false for hard delete)',
+  })
   @ApiNotFoundResponse({ description: 'Product not found under this tenant' })
   async deleteProduct(
     @Param('productId') productId: string,
     @CurrentTenant() tenantId: string,
+    @Query('soft') soft?: string,
   ): Promise<{ message: string }> {
-    return await this.productService.deleteProduct(productId, tenantId);
+    const isSoftDelete = soft !== 'false';
+    return await this.productService.deleteProduct(
+      productId,
+      tenantId,
+      isSoftDelete,
+    );
+  }
+
+  @Patch(':productId/restore')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Restore a soft-deleted product' })
+  @ApiNotFoundResponse({
+    description: 'Soft-deleted product not found under this tenant',
+  })
+  @ApiBadRequestResponse({
+    description: 'Active product with the same SKU already exists',
+  })
+  async restoreProduct(
+    @Param('productId') productId: string,
+    @CurrentTenant() tenantId: string,
+  ): Promise<ProductResponseDto> {
+    return await this.productService.restoreProduct(productId, tenantId);
   }
 }

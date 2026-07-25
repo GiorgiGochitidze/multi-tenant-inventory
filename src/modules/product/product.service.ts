@@ -113,17 +113,53 @@ export class ProductService {
     return await this.productRepository.save(product);
   }
 
-  async deleteProduct(productId: string, tenantId: string) {
-    const product = await this.findProduct(productId, tenantId);
+  async deleteProduct(productId: string, tenantId: string, isSoft = true) {
+    validateUUIDs(tenantId);
+
+    // Use withDeleted: true so we can find soft-deleted items if performing a hard delete
+    const product = await this.productRepository.findOne({
+      where: { id: productId, tenantId },
+      withDeleted: true,
+    });
 
     if (!product) {
-      throw new NotFoundException('Product with this ID or TenantID Not Found');
+      throw new NotFoundException('Product with this ID or TenantID not found');
     }
 
-    await this.productRepository.softRemove(product);
+    if (isSoft) {
+      if (product.deletedAt) {
+        throw new BadRequestException('Product is already soft-deleted');
+      }
+      await this.productRepository.softRemove(product);
+      return { message: 'Product soft-deleted successfully' };
+    } else {
+      // Permanent deletion from database table
+      await this.productRepository.remove(product);
+      return { message: 'Product permanently removed from database' };
+    }
+  }
 
-    return {
-      message: 'Product deleted successfully',
-    };
+  async restoreProduct(productId: string, tenantId: string) {
+    const product = await this.productRepository.findOne({
+      where: { id: productId, tenantId },
+      withDeleted: true,
+    });
+
+    if (!product || !product.deletedAt) {
+      throw new NotFoundException('Soft-deleted product not found');
+    }
+
+    // Check if an active product took over this SKU while it was deleted
+    const activeSkuConflict = await this.productRepository.findOne({
+      where: { tenantId, sku: product.sku },
+    });
+
+    if (activeSkuConflict) {
+      throw new BadRequestException(
+        `Cannot restore product: active product "${activeSkuConflict.name}" is currently using SKU "${product.sku}". Rename or delete it first.`,
+      );
+    }
+
+    return await this.productRepository.recover(product);
   }
 }
