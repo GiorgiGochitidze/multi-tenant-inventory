@@ -4,11 +4,11 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductService } from '../product.service';
 import { Product } from '../entity/Product.entity';
 import { CreateProductDto } from '../dto/create-product.dto';
-import { buildProduct } from './factories/product.factory';
 import {
   createMockRepository,
   MockRepository,
 } from '../../../../test/mock-repository';
+import { buildProduct } from './product.factory';
 
 describe('ProductService', () => {
   let service: ProductService;

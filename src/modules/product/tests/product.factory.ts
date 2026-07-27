@@ -1,5 +1,5 @@
-import { Product } from '../../entity/Product.entity';
-import { Tenant } from '../../../tenant/entity/Tenant.entity';
+import { Product } from '../entity/Product.entity';
+import { Tenant } from '../../tenant/entity/Tenant.entity';
 
 export const buildProduct = (overrides?: Partial<Product>): Product => ({
   id: '7a69aa1c-d816-4a26-b51a-c0b795432b5b',
