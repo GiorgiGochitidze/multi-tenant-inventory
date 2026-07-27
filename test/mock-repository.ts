@@ -17,4 +17,5 @@ export const createMockRepository = <
   softRemove: jest.fn(),
   remove: jest.fn(),
   recover: jest.fn(),
+  createQueryBuilder: jest.fn(),
 });
