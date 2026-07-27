@@ -16,7 +16,6 @@ import { InviteStaffDto } from '../dto/invite-staff.dto';
 import { UpdateRoleDto } from '../dto/update-role.dto';
 import { UpdateStatusDto } from '../dto/update-status.dto';
 
-
 jest.mock('bcrypt');
 import * as bcrypt from 'bcrypt';
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
