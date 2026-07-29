@@ -1,6 +1,13 @@
 {
   "name": "multi-tenant-inventory",
   "version": "0.0.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt",
+      "@scarf/scarf",
+      "unrs-resolver"
+    ]
+  },
   "description": "",
   "author": "",
   "private": true,
