@@ -21,7 +21,6 @@ import { TenantModule } from './modules/tenant/tenant.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get<string>('DATABASE_URL');
-        // Only enable SSL if explicitly enabled via env (e.g., Render/production cloud DBs)
         const useSsl = configService.get<string>('DB_SSL') === 'true';
 
         return {
