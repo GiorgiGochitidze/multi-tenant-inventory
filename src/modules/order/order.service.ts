@@ -95,15 +95,11 @@ export class OrderService {
 
     const orders = await this.orderRepository.find({
       where: { tenantId },
-      relations: { items: true },
+      relations: { items: { product: true } },
       order: { createdAt: 'DESC' },
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
     });
-
-    if (orders.length === 0) {
-      throw new NotFoundException('No orders found for this tenant');
-    }
 
     return orders;
   }
@@ -113,7 +109,7 @@ export class OrderService {
 
     const order = await this.orderRepository.findOne({
       where: { id: orderId, tenantId },
-      relations: { items: true },
+      relations: { items: { product: true } },
     });
 
     if (!order) {

@@ -120,12 +120,12 @@ describe('OrderService', () => {
       expect(result).toEqual(orders);
     });
 
-    it('should throw NotFoundException if no orders are found', async () => {
+    it('should return an empty array when no orders are found', async () => {
       mockOrderRepository.find?.mockResolvedValue([]);
 
-      await expect(service.getOrders('1', '5', mockTenantId)).rejects.toThrow(
-        NotFoundException,
-      );
+      const result = await service.getOrders('1', '5', mockTenantId);
+
+      expect(result).toEqual([]);
     });
   });
 
