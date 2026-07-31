@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../product/entity/Product.entity';
 import { LessThanOrEqual, Repository } from 'typeorm';
@@ -48,12 +48,6 @@ export class AnalyticsService {
       take: limitNum,
       withDeleted: false,
     });
-
-    if (products.length === 0) {
-      throw new NotFoundException(
-        'No low stock products found for this tenant',
-      );
-    }
 
     return products;
   }

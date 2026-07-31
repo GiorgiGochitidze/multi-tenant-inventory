@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
 import { AnalyticsService } from '../analytics.service';
 import { Product } from '../../product/entity/Product.entity';
 import { Order } from '../../order/entity/Order.entity';
@@ -77,12 +76,17 @@ describe('AnalyticsService', () => {
       expect(result).toEqual(products);
     });
 
-    it('should throw NotFoundException when no low stock products are found', async () => {
+    it('should return an empty array when no low stock products are found', async () => {
       mockProductRepository.find?.mockResolvedValue([]);
 
-      await expect(
-        service.getLowStockProduct(mockTenantId, 10, '1', '5'),
-      ).rejects.toThrow(NotFoundException);
+      const result = await service.getLowStockProduct(
+        mockTenantId,
+        10,
+        '1',
+        '5',
+      );
+
+      expect(result).toEqual([]);
     });
   });
 
