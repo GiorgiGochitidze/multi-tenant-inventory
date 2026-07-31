@@ -125,7 +125,7 @@ export class OrderService {
     return await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(Order, {
         where: { id: orderId, tenantId },
-        relations: { items: true },
+        relations: { items: { product: true } },
       });
 
       if (!order) {
@@ -138,10 +138,8 @@ export class OrderService {
         throw new BadRequestException('Order is already cancelled');
       }
 
-      // Extract product IDs from order items
       const productIds = order.items.map((item) => item.productId);
 
-      // Fetch all relevant products in a single batch (including soft-deleted ones)
       const products = await manager.find(Product, {
         where: { id: In(productIds), tenantId },
         withDeleted: true,
@@ -149,7 +147,6 @@ export class OrderService {
 
       const productMap = new Map(products.map((p) => [p.id, p]));
 
-      // Restore stock quantities in memory
       for (const item of order.items) {
         const product = productMap.get(item.productId);
         if (product) {
@@ -157,7 +154,6 @@ export class OrderService {
         }
       }
 
-      // Batch save all updated products in 1 query
       if (products.length > 0) {
         await manager.save(Product, products);
       }
@@ -176,6 +172,7 @@ export class OrderService {
 
     const order = await this.orderRepository.findOne({
       where: { id: orderId, tenantId },
+      relations: { items: { product: true } },
     });
 
     if (!order) {
@@ -188,7 +185,6 @@ export class OrderService {
       );
     }
 
-    // If shifting to CANCELLED, execute full inventory restore logic
     if (dto.status === OrderStatus.CANCELLED) {
       return await this.cancelOrder(orderId, tenantId);
     }
