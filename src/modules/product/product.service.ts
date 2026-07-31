@@ -50,7 +50,12 @@ export class ProductService {
     return await this.productRepository.save(newProduct);
   }
 
-  async getProducts(page: string, pageSize: string, tenantId: string) {
+  async getProducts(
+    page: string,
+    pageSize: string,
+    tenantId: string,
+    withDeleted = false,
+  ) {
     validateUUIDs(tenantId);
 
     const pageNum = Math.max(1, Number(page) || 1);
@@ -62,13 +67,10 @@ export class ProductService {
       relations: {
         tenant: true,
       },
+      withDeleted,
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
     });
-
-    if (products.length === 0) {
-      throw new NotFoundException('Products Not Found For Given TenantID');
-    }
 
     return products;
   }

@@ -42,8 +42,14 @@ export class ProductController {
     @CurrentTenant() tenantId: string,
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,
+    @Query('withDeleted') withDeleted?: string,
   ): Promise<ProductResponseDto[]> {
-    return await this.productService.getProducts(page, pageSize, tenantId);
+    return await this.productService.getProducts(
+      page,
+      pageSize,
+      tenantId,
+      withDeleted === 'true',
+    );
   }
 
   @Get(':productId')
